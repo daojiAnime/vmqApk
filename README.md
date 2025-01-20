@@ -12,6 +12,12 @@ vmq-fastapi-android
 
 </div>
 
+## 感谢
+本项目需要对多租户进行支持，所以需要对原作者的代码进行修改。不支持原版本控制中台。
+
+感谢原作者 [szvone](https://github.com/szvone) 的 [vmqApk](https://github.com/szvone/VmqApk) 项目，此项目最早的版本。
+
+感谢 [zwc456baby](https://github.com/zwc456baby) 的 [vmqApk](https://github.com/zwc456baby/vmqApk) 项目，本项目基于此项目进行修改。
 
 
 ## Android 15 新限制
@@ -56,37 +62,8 @@ appops set com.vone.qrcode RECEIVE_SENSITIVE_NOTIFICATIONS allow
 
 如果 APK 出现什么问题，不兼容你的手机或新版支付宝，可以从赞助链接与我反馈
 
-如果你不想搭建或者不会搭建 V免签，可以用我搭建好的 [V免签系统](http://pay.zwc365.com/)
-
-===============
-
-
-V免签 是基于SpringBoot 2.1.1/ThinkPhP5.1 实现的一套免签支付程序，主要包含以下特色：
-
- + JAVA、PHP双服务端，总有一款适合你服务器
- + 超简单Api使用，提供统一Api实现收款回调
- + 免费、开源
-
-> Java版服务端地址：【 https://github.com/szvone/Vmq 】
-
-> PHP 版服务端地址：【 https://github.com/szvone/vmqphp 】
-
-## 前言
-
-[赞助链接](https://card.zwc365.com/p/2eyzmzlwcdc076wm8zc2)
-
-## 安装
-
- + 下载服务端程序，可选PHP/Java版，按照说明安装
- + 下载编译好的Apk,安装后扫码/手动配置 即可使用
-
-
- > 升级说明：请您直接下载新版本覆盖旧版本即可！
-
-
 ## 说明
  + 请部署完成后访问后台，有详细的Api说明
-
 
 ## 注意
 
@@ -99,9 +76,7 @@ V免签 是基于SpringBoot 2.1.1/ThinkPhP5.1 实现的一套免签支付程序�
   + v免签是免费开源产品，所有程序均开放源代码，所以不会有收费计划，因此作者不可能教会每个人部署安装，请参考文档多百度谷歌，v免签使用具有一定的技术门槛，请见谅！
 
   + v免签的监控端并不适配所有手机，遇到手机无法正常使用的时候，请您更换手机或使用模拟器挂机！
-
-  + v免签拥有双语言服务端，当您使用php版本服务端遇到问题的时候，请您尝试使用java版本服务端，php版本服务端配置略复杂，需要配置伪静态规则，请知悉！
-
+  + 
   + 正常的安装步骤简略如下
     + 下载服务端部署(GitHub中下载的为最新版)
     + 登录网站后台更改系统设置
