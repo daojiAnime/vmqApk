@@ -34,6 +34,7 @@ import com.google.zxing.camera.PlanarYUVLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 
 import java.util.Hashtable;
+import java.util.Objects;
 
 
 final class DecodeHandler extends Handler {
@@ -51,15 +52,11 @@ final class DecodeHandler extends Handler {
 
   @Override
   public void handleMessage(Message message) {
-    switch (message.what) {
-      case R.id.decode:
-        //Log.d(TAG, "Got decode message");
-        decode((byte[]) message.obj, message.arg1, message.arg2);
-        break;
-      case R.id.quit:
-        Looper.myLooper().quit();
-        break;
-    }
+      if (message.what == R.id.decode) {//Log.d(TAG, "Got decode message");
+          decode((byte[]) message.obj, message.arg1, message.arg2);
+      } else if (message.what == R.id.quit) {
+          Objects.requireNonNull(Looper.myLooper()).quit();
+      }
   }
 
   /**
