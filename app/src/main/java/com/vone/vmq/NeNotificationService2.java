@@ -38,10 +38,11 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class NeNotificationService2 extends NotificationListenerService {
-    private static String TAG = "NeNotificationService2";
+    private static final String TAG = "NeNotificationService2";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private String host = "";
     private String key = "";
+    private String appId = "";
     private Thread newThread = null;
     private PowerManager.WakeLock mWakeLock = null;
     public static boolean isRunning;
@@ -90,19 +91,19 @@ public class NeNotificationService2 extends NotificationListenerService {
                     SharedPreferences read = getSharedPreferences("vone", MODE_PRIVATE);
                     host = read.getString("host", "");
                     key = read.getString("key", "");
+                    appId = read.getString("app_id", "");
 
                     //这里写入子线程需要做的工作
                     String t = String.valueOf(new Date().getTime());
                     String sign = md5(t + key);
 
-                    final String url = "http://" + host + "/appHeart?t=" + t + "&sign=" + sign;
+                    final String url = host + "/appHeart?t=" + t + "&sign=" + sign + "&app_id=" + appId;
                     Request request = new Request.Builder().url(url).method("GET", null).build();
                     Call call = Utils.getOkHttpClient().newCall(request);
                     call.enqueue(new Callback() {
                         @Override
                         public void onFailure(Call call, IOException e) {
-                            // final String error = e.getMessage();
-                            // Toast.makeText(getApplicationContext(), "心跳状态错误，请检查配置是否正确!" + error, Toast.LENGTH_LONG).show();
+                            Log.e(TAG, "Request failed", e);
                             foregroundHeart(url);
                         }
 
@@ -112,7 +113,7 @@ public class NeNotificationService2 extends NotificationListenerService {
                             try {
                                 Log.d(TAG, "onResponse heard: " + response.body().string());
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                Log.e(TAG, "Error processing response", e);
                             }
                             if (!response.isSuccessful()) {
                                 foregroundHeart(url);
@@ -122,7 +123,7 @@ public class NeNotificationService2 extends NotificationListenerService {
                     try {
                         Thread.sleep(30 * 1000);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "Thread sleep interrupted", e);
                     }
                 }
             }
@@ -144,6 +145,7 @@ public class NeNotificationService2 extends NotificationListenerService {
         SharedPreferences read = getSharedPreferences("vone", MODE_PRIVATE);
         host = read.getString("host", "");
         key = read.getString("key", "");
+        appId = read.getString("app_id", "");
 
         Notification notification = sbn.getNotification();
         String pkg = sbn.getPackageName();
@@ -161,7 +163,7 @@ public class NeNotificationService2 extends NotificationListenerService {
                 String title = _title.toString();
                 String content = _content.toString();
                 if ("com.eg.android.AlipayGphone".equals(pkg)) {
-                    if (!content.equals("")) {
+                    if (!content.isEmpty()) {
                         if (content.contains("通过扫码向你付款") || content.contains("成功收款")
                                 || title.contains("通过扫码向你付款") || title.contains("成功收款")
                                 || content.contains("店员通") || title.contains("店员通")) {
@@ -312,12 +314,13 @@ public class NeNotificationService2 extends NotificationListenerService {
         SharedPreferences read = getSharedPreferences("vone", MODE_PRIVATE);
         host = read.getString("host", "");
         key = read.getString("key", "");
+        appId = read.getString("app_id", "");
 
         Log.d(TAG, "onResponse  push: 开始:" + type + "  " + price);
 
         String t = String.valueOf(new Date().getTime());
         String sign = md5(type + "" + price + t + key);
-        final String url = "http://" + host + "/appPush?t=" + t + "&type=" + type + "&price=" + price + "&sign=" + sign;
+        final String url = host + "/appPush?t=" + t + "&type=" + type + "&price=" + price + "&sign=" + sign + "&app_id=" + appId;
         Log.d(TAG, "onResponse  push: 开始:" + url);
         Request request = new Request.Builder().url(url).method("GET", null).build();
         Call call = Utils.getOkHttpClient().newCall(request);
@@ -334,7 +337,7 @@ public class NeNotificationService2 extends NotificationListenerService {
                 try {
                     Log.d(TAG, "onResponse  push: " + response.body().string());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Error processing response", e);
                 }
                 // 如果返回状态不是成功的。同样要回调
                 if (!response.isSuccessful()) {
@@ -464,7 +467,7 @@ public class NeNotificationService2 extends NotificationListenerService {
             }
             return result.toString();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error processing response", e);
         }
         return "";
     }

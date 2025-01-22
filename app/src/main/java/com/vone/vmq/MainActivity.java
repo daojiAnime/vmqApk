@@ -36,23 +36,30 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.Response;
 
+
 public class MainActivity extends AppCompatActivity {
 
+    // VMQ APK 版本号
+    private final static String VMQ_VERSION = "2.0.0";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private TextView txthost;
     private TextView txtkey;
+    private TextView txtAppId;
 
     private boolean isOk = false;
-    private static String TAG = "MainActivity";
+    private static final String TAG = "MainActivity";
 
     private static String host;
     private static String key;
+    private static String appId;
     int id = 0;
 
     @Override
@@ -60,8 +67,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txthost = (TextView) findViewById(R.id.txt_host);
-        txtkey = (TextView) findViewById(R.id.txt_key);
+        txthost = findViewById(R.id.txt_host);
+        txtkey = findViewById(R.id.txt_key);
+        txtAppId = findViewById(R.id.txt_app_id);
 
         //检测通知使用权是否启用
         if (!isNotificationListenersEnabled()) {
@@ -78,13 +86,15 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences read = getSharedPreferences("vone", MODE_PRIVATE);
         host = read.getString("host", "");
         key = read.getString("key", "");
+        appId = read.getString("app_id", "");
 
-        if (host != null && key != null && host != "" && key != "") {
+        if (host != null && key != null && !host.isEmpty() && !key.isEmpty()) {
             txthost.setText(" 通知地址：" + host);
             txtkey.setText(" 通讯密钥：" + key);
+            txtAppId.setText(" 应用ID：" + appId);
             isOk = true;
         }
-        Toast.makeText(MainActivity.this, "v免签开源免费免签系统 v1.8.1", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "V免签开源免费免签系统 v" + VMQ_VERSION, Toast.LENGTH_SHORT).show();
     }
 
     //扫码配置
@@ -116,22 +126,28 @@ public class MainActivity extends AppCompatActivity {
 
             public void onClick(DialogInterface dialog, int which) {
                 String scanResult = inputServer.getText().toString();
+                // 使用正则表达式提取URL、sign和app_id
+                Pattern pattern = Pattern.compile("^(https?://[^/]+)/([^/]+)/([^/]+)$");
+                Matcher matcher = pattern.matcher(scanResult);
 
-                String[] tmp = scanResult.split("/");
-                if (tmp.length != 2) {
+                if (!matcher.matches()) {
                     Toast.makeText(MainActivity.this, "数据错误，请您输入网站上显示的配置数据!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                String t = String.valueOf(new Date().getTime());
-                String sign = md5(t + tmp[1]);
+                String url = matcher.group(1);
+                String sign = matcher.group(2);
+                String aid = matcher.group(3);
 
-                Request request = new Request.Builder().url("http://" + tmp[0] + "/appHeart?t=" + t + "&sign=" + sign).method("GET", null).build();
+                String t = String.valueOf(new Date().getTime());
+                String signHash = md5(t + sign);
+
+                Request request = new Request.Builder().url(url + "/appHeart?t=" + t + "&sign=" + signHash + "&app_id=" + aid).method("GET", null).build();
                 Call call = Utils.getOkHttpClient().newCall(request);
                 call.enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
-
+                        Log.e(TAG, "Request failed", e);
                     }
 
                     @Override
@@ -139,26 +155,28 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             Log.d(TAG, "onResponse: " + response.body().string());
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e(TAG, "Error processing response", e);
                         }
                         isOk = true;
                     }
                 });
-                if (tmp[0].indexOf("localhost") >= 0) {
+                if (url.contains("localhost")) {
                     Toast.makeText(MainActivity.this, "配置信息错误，本机调试请访问 本机局域网IP:8080(如192.168.1.101:8080) 获取配置信息进行配置!", Toast.LENGTH_LONG).show();
 
                     return;
                 }
                 //将扫描出的信息显示出来
-                txthost.setText(" 通知地址：" + tmp[0]);
-                txtkey.setText(" 通讯密钥：" + tmp[1]);
-                host = tmp[0];
-                key = tmp[1];
+                txthost.setText(" 通知地址：" + url);
+                txtkey.setText(" 通讯密钥：" + sign);
+                host = url;
+                key = sign;
+                appId = aid;
 
                 SharedPreferences.Editor editor = getSharedPreferences("vone", MODE_PRIVATE).edit();
                 editor.putString("host", host);
                 editor.putString("key", key);
-                editor.commit();
+                editor.putString("app_id", appId);
+                editor.apply();
 
             }
         });
@@ -176,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         String t = String.valueOf(new Date().getTime());
         String sign = md5(t + key);
 
-        Request request = new Request.Builder().url("http://" + host + "/appHeart?t=" + t + "&sign=" + sign).method("GET", null).build();
+        Request request = new Request.Builder().url(host + "/appHeart?t=" + t + "&sign=" + sign + "&app_id=" + appId).method("GET", null).build();
         Call call = Utils.getOkHttpClient().newCall(request);
         call.enqueue(new Callback() {
             @Override
@@ -326,21 +344,25 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = data.getExtras();
             String scanResult = bundle.getString(Constant.INTENT_EXTRA_KEY_QR_SCAN);
 
-            String[] tmp = scanResult.split("/");
-            if (tmp.length != 2) {
+            Pattern pattern = Pattern.compile("^(https?://[^/]+)/([^/]+)/([^/]+)$");
+            Matcher matcher = pattern.matcher(scanResult);
+            if (!matcher.matches()) {
                 Toast.makeText(MainActivity.this, "二维码错误，请您扫描网站上显示的二维码!", Toast.LENGTH_SHORT).show();
                 return;
             }
+            String url = matcher.group(1);
+            String sign = matcher.group(2);
+            String aid = matcher.group(3);
 
             String t = String.valueOf(new Date().getTime());
-            String sign = md5(t + tmp[1]);
+            String signHash = md5(t + sign);
 
-            Request request = new Request.Builder().url("http://" + tmp[0] + "/appHeart?t=" + t + "&sign=" + sign).method("GET", null).build();
+            Request request = new Request.Builder().url(url + "/appHeart?t=" + t + "&sign=" + signHash + "&app_id=" + aid).method("GET", null).build();
             Call call = Utils.getOkHttpClient().newCall(request);
             call.enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-
+                    Log.e(TAG, "Request failed", e);
                 }
 
                 @Override
@@ -348,22 +370,25 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         Log.d(TAG, "onResponse: " + response.body().string());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "Error processing response", e);
                     }
                     isOk = true;
                 }
             });
 
             //将扫描出的信息显示出来
-            txthost.setText(" 通知地址：" + tmp[0]);
-            txtkey.setText(" 通讯密钥：" + tmp[1]);
-            host = tmp[0];
-            key = tmp[1];
+            txthost.setText(" 通知地址：" + url);
+            txtkey.setText(" 通讯密钥：" + sign);
+            txtAppId.setText(" 应用ID：" + aid);
+            host = url;
+            key = sign;
+            appId = aid;
 
             SharedPreferences.Editor editor = getSharedPreferences("vone", MODE_PRIVATE).edit();
             editor.putString("host", host);
             editor.putString("key", key);
-            editor.commit();
+            editor.putString("app_id", appId);
+            editor.apply();
         }
     }
 

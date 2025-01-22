@@ -29,6 +29,13 @@
         android:layout_height="wrap_content"
         android:text=" 通讯密钥：请扫码配置" />
 
+    <TextView
+        android:paddingBottom="20dp"
+        android:id="@+id/txt_app_id"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text=" 应用ID：请扫码配置" />
+
 
     <Button
         android:id="@+id/btn_qrcode"
